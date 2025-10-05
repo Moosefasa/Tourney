@@ -165,6 +165,49 @@ export default function TournamentBracket() {
     }
   }, [darkMode]);
 
+  // Load saved data on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('tournamentData');
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData);
+        if (data.bracket) {
+          if (data.teams) setTeams(data.teams);
+          setBracket(data.bracket);
+          if (data.currentRound !== undefined) setCurrentRound(data.currentRound);
+          if (data.tournamentName) setTournamentName(data.tournamentName);
+          if (data.useScoring !== undefined) setUseScoring(data.useScoring);
+          if (data.view) setView(data.view);
+        }
+        if (data.darkMode !== undefined) setDarkMode(data.darkMode);
+      } catch (e) {
+        console.error('Failed to load saved data:', e);
+      }
+    }
+  }, []);
+
+  // Save data whenever it changes
+  useEffect(() => {
+    if (bracket) {
+      const dataToSave = {
+        teams,
+        bracket,
+        currentRound,
+        tournamentName,
+        useScoring,
+        darkMode,
+        view
+      };
+      localStorage.setItem('tournamentData', JSON.stringify(dataToSave));
+    } else {
+      // Save dark mode even without bracket
+      const savedData = localStorage.getItem('tournamentData');
+      const data = savedData ? JSON.parse(savedData) : {};
+      data.darkMode = darkMode;
+      localStorage.setItem('tournamentData', JSON.stringify(data));
+    }
+  }, [teams, bracket, currentRound, tournamentName, useScoring, darkMode, view]);
+
   // Theme classes
   const bgClass = darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-blue-50 to-indigo-100';
   const cardBg = darkMode ? 'bg-gray-800' : 'bg-white';
@@ -327,23 +370,18 @@ export default function TournamentBracket() {
 
         {/* Round View */}
         {bracket && view === 'round' && (
-          <div
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className={`${cardBg} rounded-lg shadow-lg p-4 transition-all duration-300`}
-          >
+          <div className={`${cardBg} rounded-lg shadow-lg p-4 transition-all duration-300`}>
             {/* Navigation Controls */}
-            <div className="flex items-center justify-between mb-4">
+            <div className={`flex items-center justify-between mb-6 pb-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <button
                 onClick={() => setCurrentRound(Math.max(0, currentRound - 1))}
                 disabled={currentRound === 0}
-                className={`${darkMode ? 'bg-gray-700' : 'bg-gray-500'} text-white p-2 rounded-lg hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed transition-all`}
+                className={`${darkMode ? 'bg-gray-700' : 'bg-gray-500'} text-white p-2 rounded-lg hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0`}
               >
                 <ChevronLeft size={24} />
               </button>
               
-              <div className="text-center flex-1">
+              <div className="text-center flex-1 px-4">
                 <h2 className={`text-xl md:text-2xl font-bold ${textPrimary}`}>
                   {currentRound === bracket.length - 1 ? 'Final' : `Round ${currentRound + 1}`}
                 </h2>
@@ -355,14 +393,19 @@ export default function TournamentBracket() {
               <button
                 onClick={() => setCurrentRound(Math.min(bracket.length - 1, currentRound + 1))}
                 disabled={currentRound === bracket.length - 1}
-                className={`${darkMode ? 'bg-gray-700' : 'bg-gray-500'} text-white p-2 rounded-lg hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed transition-all`}
+                className={`${darkMode ? 'bg-gray-700' : 'bg-gray-500'} text-white p-2 rounded-lg hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0`}
               >
                 <ChevronRight size={24} />
               </button>
             </div>
 
             {/* Matches */}
-            <div className="space-y-4">
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              className="space-y-4"
+            >
               {bracket[currentRound].map((match, matchIdx) => (
                 <div key={matchIdx} className={`${matchBg} rounded-lg p-4 border-2 ${darkMode ? 'border-gray-600' : 'border-gray-200'} transition-all hover:shadow-lg`}>
                   <div className={`text-center ${textMuted} text-sm font-medium mb-3`}>
